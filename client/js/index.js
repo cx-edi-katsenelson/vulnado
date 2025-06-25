@@ -58,6 +58,13 @@ $(document).ready(function(){
     window.location.replace("login.html")
   });
 
+  $('#signout').click(function(){
+    alert("Goodbye!");
+    localStorage.jwt = '';
+    localStorage.username = '';
+    window.location.replace("login.html")
+  });
+
   // Initialize
   if (localStorage.getItem("jwt")){
     fetchComments();
