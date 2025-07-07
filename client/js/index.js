@@ -13,7 +13,7 @@ $(document).ready(function(){
     $('.delete-comment').click(function(){
       var parent = this.closest(".row");
       var id = $(parent).data("comment_id");
-
+      var pwd = "1234";
       $.ajax({
         type: "DELETE",
         url: "http://localhost:8080/comments/" + id
