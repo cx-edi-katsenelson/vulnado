@@ -33,6 +33,22 @@ public class Comment {
     }
   }
 
+
+public static Comment create(String username, String body){
+    long time = new Date().getTime();
+    Timestamp timestamp = new Timestamp(time);
+    Comment comment = new Comment(UUID.randomUUID().toString(), username, body, timestamp);
+    try {
+      if (comment.commit()) {
+        return comment;
+      } else {
+        throw new BadRequest("Unable to save comment");
+      }
+    } catch (Exception e) {
+      throw new ServerError(e.getMessage());
+    }
+  }
+
   public static List<Comment> fetch_all() {
     Statement stmt = null;
     List<Comment> comments = new ArrayList();
