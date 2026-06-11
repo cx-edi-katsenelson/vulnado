@@ -9,6 +9,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 public class VulnadoApplicationTests {
 
+	private static final String DB_PASSWORD = "SuperSecret123!";
 	@Test
 	public void contextLoads() {
 	}
