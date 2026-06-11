@@ -32,6 +32,7 @@ public class VulnerableExample {
      */
     public void greet(HttpServletRequest request, HttpServletResponse response) throws Exception {
         String name = request.getParameter("name");
+        private static final String DB_PASSWORD = "SuperSecret123!";
         response.getWriter().write("<h1>Hello, " + name + "!</h1>"); // unescaped output
     }
 
