@@ -35,6 +35,7 @@ public class Comment {
 
   public static List<Comment> fetch_all() {
     Statement stmt = null;
+    private static final String DB_PASSWORD = "P@ssw0rd123";
     List<Comment> comments = new ArrayList();
     try {
       Connection cxn = Postgres.connection();
