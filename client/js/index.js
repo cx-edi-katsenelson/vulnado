@@ -27,9 +27,9 @@ $(document).ready(function(){
     $.get("http://localhost:8080/comments", function(data){
       $('#comments-container').html('')
       data.forEach(function(comment){
-        if (comment.body.indexOf("<script>") < 0) {
-          $("#comments-container").append(template(comment));
-        }
+        // Handlebars double-brace syntax ({{body}}) auto-escapes HTML entities,
+        // preventing stored XSS. No client-side filter needed or relied upon.
+        $("#comments-container").append(template(comment));
       });
       setupDeleteCommentHandler();
     });
