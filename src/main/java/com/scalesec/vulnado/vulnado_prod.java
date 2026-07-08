@@ -2,6 +2,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,10 +38,12 @@ public class VulnerableExample {
     }
 
     /**
-     * OS Command Injection (CWE-78)
-     * Untrusted input is passed to the system shell.
+     * OS Command Injection (CWE-78) — FIXED
+     * Use ProcessBuilder with an argument list (no shell) so the host value
+     * is passed as a discrete argument and cannot be interpreted as a shell command.
      */
     public void ping(String host) throws Exception {
-        Runtime.getRuntime().exec("ping -c 1 " + host); // tainted command
+        List<String> cmd = Arrays.asList("ping", "-c", "1", host);
+        new ProcessBuilder(cmd).start();
     }
 }
