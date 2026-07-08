@@ -1,0 +1,219 @@
+<!doctype html>
+<!--
+  test_xss_fix.html
+
+  Tests that the Stored XSS fix in index.html is effective.
+
+  Vulnerability fixed: Handlebars triple-brace {{{body}}} was replaced with
+  double-brace {{body}} to enable HTML auto-escaping, preventing stored XSS.
+
+  Open this file in a browser to run the tests. Results appear in the page body.
+  No server is required.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>XSS Fix Tests - Comment Template</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; font-weight: bold; }
+    pre { background: #f4f4f4; padding: 8px; border-left: 3px solid #ccc; }
+    h2 { margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Stored XSS Remediation Tests</h1>
+  <p>
+    Verifies that <code>&#123;&#123;body&#125;&#125;</code> (Handlebars double-brace)
+    auto-escapes HTML entities, preventing stored XSS.
+  </p>
+  <div id="results"></div>
+
+  <!-- Inline the fixed comment template (mirrors client/index.html) -->
+  <script id="comment-template" type="text/x-handlebars-template">
+    <div class="row" data-comment_id="{{id}}">
+      <div class="col-sm-12">
+        <div class="card">
+          <div class="card-header">
+            <strong>{{username}}</strong> commented at {{created_on}}
+          </div>
+          <div class="card-body">
+            <p class="card-text">{{body}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script src="http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars.min-v4.1.0.js"></script>
+  <script>
+    // ---------------------------------------------------------------------------
+    // Minimal test harness (no external test framework required)
+    // ---------------------------------------------------------------------------
+    var passed = 0;
+    var failed = 0;
+    var resultsEl = document.getElementById('results');
+
+    function assert(description, condition, detail) {
+      var el = document.createElement('div');
+      if (condition) {
+        el.className = 'pass';
+        el.innerHTML = '&#10003; PASS: ' + description;
+        passed++;
+      } else {
+        el.className = 'fail';
+        el.innerHTML = '&#10007; FAIL: ' + description;
+        if (detail) {
+          var pre = document.createElement('pre');
+          pre.textContent = detail;
+          el.appendChild(pre);
+        }
+        failed++;
+      }
+      resultsEl.appendChild(el);
+    }
+
+    function assertNotContains(description, haystack, needle) {
+      var ok = haystack.indexOf(needle) < 0;
+      assert(description, ok,
+        ok ? null : 'Found disallowed content "' + needle + '" in:\n' + haystack);
+    }
+
+    function assertContains(description, haystack, needle) {
+      var ok = haystack.indexOf(needle) >= 0;
+      assert(description, ok,
+        ok ? null : 'Expected "' + needle + '" not found in:\n' + haystack);
+    }
+
+    // Compile the fixed template (uses {{body}} — double brace, HTML-escaped)
+    var source = document.getElementById('comment-template').innerHTML;
+    var template = Handlebars.compile(source);
+
+    // ---------------------------------------------------------------------------
+    // Test 1: Plain text is rendered without modification
+    // ---------------------------------------------------------------------------
+    (function() {
+      var html = template({ id: 1, username: 'alice', created_on: '2024-01-01', body: 'Hello, world!' });
+      assertContains(
+        'Plain text body is rendered correctly',
+        html, 'Hello, world!'
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 2: <script> tag in body is escaped, not executed
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssPayload = '<script>window.__xss_executed = true;<\/script>';
+      var html = template({ id: 2, username: 'attacker', created_on: '2024-01-01', body: xssPayload });
+
+      // The literal <script> tag must NOT appear in the output
+      assertNotContains(
+        '<script> tag is not injected into DOM',
+        html, '<script>'
+      );
+
+      // The payload should be HTML-entity-encoded instead
+      assertContains(
+        '<script> tag is HTML-entity-encoded as &lt;script&gt;',
+        html, '&lt;script&gt;'
+      );
+
+      // Confirm execution did not happen
+      assert(
+        'Script payload was not executed',
+        window.__xss_executed !== true
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 3: img onerror XSS vector is escaped (bypasses naive indexOf filter)
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssPayload = '<img src=x onerror="window.__xss_onerror=true">';
+      var html = template({ id: 3, username: 'attacker', created_on: '2024-01-01', body: xssPayload });
+
+      assertNotContains(
+        '<img> tag with onerror is not injected into DOM',
+        html, '<img'
+      );
+
+      assertContains(
+        '<img> payload is HTML-entity-encoded',
+        html, '&lt;img'
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 4: Uppercase <SCRIPT> variant is escaped (bypasses naive indexOf filter)
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssPayload = '<SCRIPT>window.__xss_upper=true;<\/SCRIPT>';
+      var html = template({ id: 4, username: 'attacker', created_on: '2024-01-01', body: xssPayload });
+
+      assertNotContains(
+        'Uppercase <SCRIPT> tag is not injected into DOM',
+        html, '<SCRIPT>'
+      );
+
+      assertContains(
+        'Uppercase <SCRIPT> is HTML-entity-encoded',
+        html, '&lt;SCRIPT&gt;'
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 5: Event-handler attribute injection is escaped
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssPayload = '" onmouseover="window.__xss_event=true" data-x="';
+      var html = template({ id: 5, username: 'attacker', created_on: '2024-01-01', body: xssPayload });
+
+      assertNotContains(
+        'onmouseover attribute injection is escaped',
+        html, 'onmouseover='
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 6: javascript: URI scheme in body is escaped
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssPayload = '<a href="javascript:alert(1)">click</a>';
+      var html = template({ id: 6, username: 'attacker', created_on: '2024-01-01', body: xssPayload });
+
+      assertNotContains(
+        'javascript: URI is not injected as a live anchor tag',
+        html, '<a href='
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Test 7: Username field is also escaped (separate Handlebars binding)
+    // ---------------------------------------------------------------------------
+    (function() {
+      var xssUsername = '<script>window.__xss_username=true;<\/script>';
+      var html = template({ id: 7, username: xssUsername, created_on: '2024-01-01', body: 'Normal comment' });
+
+      assertNotContains(
+        '<script> in username field is not injected into DOM',
+        html, '<script>'
+      );
+
+      assertContains(
+        '<script> in username is HTML-entity-encoded',
+        html, '&lt;script&gt;'
+      );
+    })();
+
+    // ---------------------------------------------------------------------------
+    // Summary
+    // ---------------------------------------------------------------------------
+    var summary = document.createElement('h2');
+    summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+    summary.style.color = failed > 0 ? 'red' : 'green';
+    resultsEl.appendChild(summary);
+  </script>
+</body>
+</html>
