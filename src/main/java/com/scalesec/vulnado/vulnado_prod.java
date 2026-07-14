@@ -36,10 +36,12 @@ public class VulnerableExample {
     }
 
     /**
-     * OS Command Injection (CWE-78)
-     * Untrusted input is passed to the system shell.
+     * OS Command Injection (CWE-78) - FIXED
+     * Use ProcessBuilder with an argument list (shell=false equivalent) so that
+     * host is treated as a literal argument and never interpreted by a shell.
      */
     public void ping(String host) throws Exception {
-        Runtime.getRuntime().exec("ping -c 1 " + host); // tainted command
+        // Fix: pass arguments as a list — no shell interpolation possible.
+        new ProcessBuilder("ping", "-c", "1", host).start();
     }
 }
