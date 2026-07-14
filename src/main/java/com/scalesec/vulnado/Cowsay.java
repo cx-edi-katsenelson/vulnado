@@ -5,10 +5,11 @@ import java.io.InputStreamReader;
 
 public class Cowsay {
   public static String run(String input) {
-    ProcessBuilder processBuilder = new ProcessBuilder();
-    String cmd = "/usr/games/cowsay '" + input + "'";
-    System.out.println(cmd);
-    processBuilder.command("bash", "-c", cmd);
+    // Fix: Pass arguments as a list to ProcessBuilder instead of using bash -c with
+    // string concatenation. This prevents command injection because the OS treats
+    // input as a literal argument to cowsay, never as a shell command.
+    ProcessBuilder processBuilder = new ProcessBuilder("/usr/games/cowsay", input);
+    System.out.println("/usr/games/cowsay " + input);
 
     StringBuilder output = new StringBuilder();
 
