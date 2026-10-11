@@ -5,10 +5,11 @@ import java.io.InputStreamReader;
 
 public class Cowsay {
   public static String run(String input) {
-    ProcessBuilder processBuilder = new ProcessBuilder();
-    String cmd = "/usr/games/cowsay '" + input + "'";
-    System.out.println(cmd);
-    processBuilder.command("bash", "-c", cmd);
+    // Use argv list form of ProcessBuilder (no shell interpreter) to prevent
+    // command injection. The cowsay binary receives 'input' as a discrete
+    // argument rather than part of a shell-interpolated string, so shell
+    // metacharacters in user input are never interpreted by a shell.
+    ProcessBuilder processBuilder = new ProcessBuilder("/usr/games/cowsay", input);
 
     StringBuilder output = new StringBuilder();
 
@@ -18,7 +19,7 @@ public class Cowsay {
 
       String line;
       while ((line = reader.readLine()) != null) {
-        output.append(line + "\n");
+        output.append(line).append("\n");
       }
     } catch (Exception e) {
       e.printStackTrace();
