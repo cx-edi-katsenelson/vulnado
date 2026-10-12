@@ -36,10 +36,16 @@ public class VulnerableExample {
     }
 
     /**
-     * OS Command Injection (CWE-78)
-     * Untrusted input is passed to the system shell.
+     * OS Command Injection (CWE-78) - FIXED
+     * Use the array form of exec() so the OS invokes the binary directly
+     * without a shell, preventing injection via shell metacharacters.
+     * The host argument is passed as a discrete argv element; the shell
+     * never sees it and cannot interpret semicolons, backticks, etc.
      */
     public void ping(String host) throws Exception {
-        Runtime.getRuntime().exec("ping -c 1 " + host); // tainted command
+        // Passing a String[] (argv list) bypasses shell interpretation entirely.
+        // No shell metacharacters (;, |, &, $(), backtick, etc.) can be injected.
+        ProcessBuilder pb = new ProcessBuilder("ping", "-c", "1", host);
+        pb.start();
     }
 }
