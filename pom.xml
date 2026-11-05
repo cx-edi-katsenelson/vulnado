@@ -16,6 +16,8 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<!-- Override Spring Boot managed Tomcat (9.0.14) to fix CVE-2026-68525 -->
+		<tomcat.version>9.0.122</tomcat.version>
 	</properties>
 
 	<dependencies>
