@@ -1,8 +1,7 @@
-FROM openjdk:8
+FROM eclipse-temurin:17-jdk
 
 RUN apt-get update && \
-    apt-get install build-essential maven default-jdk cowsay netcat -y && \
-    update-alternatives --config javac
+    apt-get install build-essential maven cowsay netcat -y
 COPY . .
 
 CMD ["mvn", "spring-boot:run"]
