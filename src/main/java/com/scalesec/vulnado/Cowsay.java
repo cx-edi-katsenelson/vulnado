@@ -5,10 +5,9 @@ import java.io.InputStreamReader;
 
 public class Cowsay {
   public static String run(String input) {
-    ProcessBuilder processBuilder = new ProcessBuilder();
-    String cmd = "/usr/games/cowsay '" + input + "'";
-    System.out.println(cmd);
-    processBuilder.command("bash", "-c", cmd);
+    // Fixed executable with user input passed as a single argv element; no shell is involved.
+    // "--" stops option parsing so the input can never be interpreted as a cowsay flag.
+    ProcessBuilder processBuilder = new ProcessBuilder("/usr/games/cowsay", "--", input);
 
     StringBuilder output = new StringBuilder();
 
